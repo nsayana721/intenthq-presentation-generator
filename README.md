@@ -7,6 +7,7 @@ Autonomous AI system that generates tailored sales presentations using 8 intelli
 ![Architecture](docs/architecture_diagram.png)
 
 ### Architecture Flow
+'''
 [USER INPUT] Brand Name
 
 [PHASE 1: INTENTHQ - File Cache, 14 days]
@@ -44,7 +45,7 @@ Autonomous AI system that generates tailored sales presentations using 8 intelli
     └─ 3️⃣ Modify content → Back to Agent 7
 
 [OUTPUT] Download PPTX
-
+'''
 ### System Components
 
 - **8 Autonomous Agents**: Each with reasoning and decision-making
