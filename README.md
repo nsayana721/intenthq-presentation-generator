@@ -125,11 +125,10 @@ uv run streamlit run ui/streamlit_app.py
 | Slide Maker | Assemble PPTX | Template-based |
 
 ## Project Structure
-<<<<<<< HEAD
 
 =======
 ```
->>>>>>> bc75383616069e7f5760db6240fcb6a1c78e2c31
+
 intenthq-presentation-generator/
 ├── config/          # Configuration and prompts
 ├── src/             # Source code
