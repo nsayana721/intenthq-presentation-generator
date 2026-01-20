@@ -255,13 +255,12 @@ Secondary Details:
         slides.append(SlideContent(
             slide=2,
             title="Agenda",
-            bullets=[
-                "Macro industry context",
-                "Top pain usecases",
-                "Intent HQ platform",
-                "Product solutions",
-                "Next steps"
-            ]
+            bullets=["The Shift",
+                     "The Challenge",
+                     "About IntentHQ",
+                     "Platform Overview",
+                     "The Solution",
+                     "AoB & Next steps"]
         ))
         
         # Slide 3: Industry Context
@@ -287,17 +286,17 @@ Secondary Details:
             content="STATIC_TEMPLATE"
         ))
         
-        # Slide 8: Platform Overview (STATIC)
+        # Slide 8: About the Intent HQ(cont..d) (STATIC)
         slides.append(SlideContent(
             slide=8,
-            title="Platform Overview",
+            title="About the Intent HQ(cont..d)",
             content="STATIC_TEMPLATE"
         ))
         
-        # Slide 9: Why Intent HQ (STATIC)
+        # Slide 9: Platform Overview (STATIC)
         slides.append(SlideContent(
             slide=9,
-            title="Why Intent HQ",
+            title="Platform Overview",
             content="STATIC_TEMPLATE"
         ))
         
@@ -316,10 +315,10 @@ Secondary Details:
                 bullets=secondary_slide.get("bullets")
             ))
         
-        # Slide 12: Thank You (STATIC)
+        # Slide 12: AOB & Next Steps (STATIC)
         slides.append(SlideContent(
             slide=12,
-            title="Thank You",
+            title="AOB & Next Steps",
             content="STATIC_TEMPLATE"
         ))
         

@@ -59,6 +59,8 @@ def initialize_session_state():
         st.session_state.thread_id = None
     if "workflow_started" not in st.session_state:
         st.session_state.workflow_started = False
+    if "workflow_complete" not in st.session_state:
+        st.session_state.workflow_complete = False
 
 
 def get_next_node(workflow, thread_id):
@@ -186,161 +188,164 @@ def main():
         st.divider()
         
         # Check if at checkpoint
-        if next_node in ["checkpoint_1", "checkpoint_2"]:
-            # At a checkpoint - show UI
+        if next_node == "checkpoint_1":
+            # At Checkpoint 1
+            st.markdown('<div class="checkpoint-banner">⏸️ <b>Workflow Paused</b> – Awaiting your input at Checkpoint 1</div>', unsafe_allow_html=True)
             
-            if next_node == "checkpoint_1":
-                # Checkpoint 1: Use case selection
-                st.markdown('<div class="checkpoint-banner">⏸️ <b>Workflow Paused</b> – Awaiting your input at Checkpoint 1</div>', unsafe_allow_html=True)
+            feedback = render_checkpoint_1(state, workflow)
+            
+            if feedback:
+                with st.spinner("Resuming workflow..."):
+                    try:
+                        updated_state = workflow.resume(feedback, thread_id)
+                        st.session_state.state = updated_state
+                        st.success("Resuming from Checkpoint 1...")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Resume failed: {e}")
+                        import traceback
+                        st.code(traceback.format_exc())
+        
+        elif next_node == "checkpoint_2":
+            # At Checkpoint 2
+            st.markdown('<div class="checkpoint-banner">⏸️ <b>Workflow Paused</b> – Awaiting your decision at Checkpoint 2</div>', unsafe_allow_html=True)
+            
+            feedback = render_checkpoint_2(state)
+            
+            if feedback:
+                action = feedback.get("action")
                 
-                feedback = render_checkpoint_1(state, workflow)
-                
-                if feedback:
-                    with st.spinner("Resuming workflow..."):
+                if action == CheckpointAction.APPROVE:
+                    # Workflow complete!
+                    st.success("✅ Presentation Approved!")
+                    st.balloons()
+                    
+                    # Mark as complete
+                    st.session_state.workflow_complete = True
+                    
+                    # Show final download
+                    pptx_path = state.get("pptx_path")
+                    if pptx_path:
+                        st.markdown("### 🎉 Your Presentation is Ready!")
+                        
                         try:
-                            # Resume with user selections
+                            with open(pptx_path, "rb") as file:
+                                st.download_button(
+                                    label="📥 **Download Final Presentation**",
+                                    data=file,
+                                    file_name=Path(pptx_path).name,
+                                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                                    type="primary",
+                                    use_container_width=True
+                                )
+                        except Exception as e:
+                            st.error(f"Error loading PPTX: {e}")
+                        
+                        # Show metadata
+                        with st.expander("📈 Execution Metadata"):
+                            col1, col2, col3 = st.columns(3)
+                            
+                            with col1:
+                                tokens = state.get("total_tokens_used", 0)
+                                st.metric("Total Tokens", f"{tokens:,}")
+                            
+                            with col2:
+                                intenthq_hit = state.get("intenthq_cache_hit", False)
+                                prospect_hit = state.get("prospect_cache_hit", False)
+                                cache_hits = sum([intenthq_hit, prospect_hit])
+                                st.metric("Cache Hits", f"{cache_hits}/2")
+                            
+                            with col3:
+                                exec_id = state.get("execution_id", "N/A")
+                                st.metric("Execution ID", exec_id[:12] + "...")
+                
+                else:
+                    # Looping back
+                    with st.spinner("Processing your request..."):
+                        try:
                             updated_state = workflow.resume(feedback, thread_id)
                             st.session_state.state = updated_state
-                            st.success("Resuming from Checkpoint 1...")
+                            st.info(f"Restarting from {action}...")
                             st.rerun()
                         except Exception as e:
                             st.error(f"Resume failed: {e}")
-            
-            elif next_node == "checkpoint_2":
-                # Checkpoint 2: Final review
-                st.markdown('<div class="checkpoint-banner">⏸️ <b>Workflow Paused</b> – Awaiting your decision at Checkpoint 2</div>', unsafe_allow_html=True)
-                
-                feedback = render_checkpoint_2(state)
-                
-                if feedback:
-                    action = feedback.get("action")
-                    
-                    if action == CheckpointAction.APPROVE:
-                        # Workflow complete!
-                        st.success("✅ Presentation Approved!")
-                        st.balloons()
-                        
-                        # Show final download
-                        pptx_path = state.get("pptx_path")
-                        if pptx_path:
-                            st.markdown("### 🎉 Your Presentation is Ready!")
-                            
-                            try:
-                                with open(pptx_path, "rb") as file:
-                                    st.download_button(
-                                        label="📥 **Download Final Presentation**",
-                                        data=file,
-                                        file_name=Path(pptx_path).name,
-                                        mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                                        type="primary",
-                                        use_container_width=True
-                                    )
-                            except Exception as e:
-                                st.error(f"Error loading PPTX: {e}")
-                            
-                            # Show metadata
-                            with st.expander("📈 Execution Metadata"):
-                                col1, col2, col3 = st.columns(3)
-                                
-                                with col1:
-                                    tokens = state.get("total_tokens_used", 0)
-                                    st.metric("Total Tokens", f"{tokens:,}")
-                                
-                                with col2:
-                                    intenthq_hit = state.get("intenthq_cache_hit", False)
-                                    prospect_hit = state.get("prospect_cache_hit", False)
-                                    cache_hits = sum([intenthq_hit, prospect_hit])
-                                    st.metric("Cache Hits", f"{cache_hits}/2")
-                                
-                                with col3:
-                                    exec_id = state.get("execution_id", "N/A")
-                                    st.metric("Execution ID", exec_id[:12] + "...")
-                    
-                    else:
-                        # Looping back
-                        with st.spinner("Processing your request..."):
-                            try:
-                                updated_state = workflow.resume(feedback, thread_id)
-                                st.session_state.state = updated_state
-                                st.info(f"Restarting from {action}...")
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Resume failed: {e}")
+                            import traceback
+                            st.code(traceback.format_exc())
         
         elif next_node is None:
-            # Workflow complete (shouldn't reach here normally)
-            st.success("✅ Workflow Complete!")
-            
-            pptx_path = state.get("pptx_path")
-            if pptx_path:
-                try:
-                    with open(pptx_path, "rb") as file:
-                        st.download_button(
-                            label="📥 Download Presentation",
-                            data=file,
-                            file_name=Path(pptx_path).name,
-                            mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
-                        )
-                except Exception as e:
-                    st.error(f"Error: {e}")
-        
-        else:
-            # Workflow is running - trigger execution
-            st.info("⚙️ Agents are working... Please wait.")
-            
-            # Live log viewer
-            log_container = st.empty()
-            
-            with st.spinner(f"Executing workflow..."):
-                try:
-                    if next_node:
-                        st.warning("Unexpected state - workflow may be paused")
-                    else:
-                        # Stream execution with live updates
-                        with st.status("Running agents...", expanded=True) as status:
-                            for i, chunk in enumerate(workflow.compiled_graph.stream(state, {"configurable": {"thread_id": thread_id}})):
-                                # Show which node just executed
-                                if chunk:
-                                    node_name = list(chunk.keys())[0] if chunk else "unknown"
-                                    status.write(f"✅ Completed: {node_name}")
-                            
-                            status.update(label="Paused at checkpoint", state="complete")
-                        
-                        # Get updated state
-                        updated_state = workflow.compiled_graph.get_state({"configurable": {"thread_id": thread_id}}).values
+            # Check if we just completed approval
+            if hasattr(st.session_state, 'workflow_complete') and st.session_state.workflow_complete:
+                st.success("✅ Workflow Complete!")
+                
+                pptx_path = state.get("pptx_path")
+                if pptx_path:
+                    try:
+                        with open(pptx_path, "rb") as file:
+                            st.download_button(
+                                label="📥 Download Presentation",
+                                data=file,
+                                file_name=Path(pptx_path).name,
+                                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                            )
+                    except Exception as e:
+                        st.error(f"Error: {e}")
+            else:
+                # Workflow just started, needs to run
+                with st.spinner("🚀 Starting workflow execution..."):
+                    try:
+                        # Start the workflow
+                        updated_state = workflow.run(state, thread_id)
                         st.session_state.state = updated_state
                         st.rerun()
+                    except Exception as e:
+                        st.error(f"❌ Workflow failed: {str(e)}")
+                        import traceback
+                        with st.expander("🐛 Full Error"):
+                            st.code(traceback.format_exc())
+        
+        else:
+            # Workflow is running between checkpoints
+            with st.spinner(f"⚙️ Executing: {next_node}"):
+                try:
+                    # Continue execution
+                    for chunk in workflow.compiled_graph.stream(
+                        None,  # None continues from checkpoint
+                        {"configurable": {"thread_id": thread_id}},
+                        stream_mode="updates"
+                    ):
+                        if chunk:
+                            node_name = list(chunk.keys())[0]
+                            st.toast(f"✅ Completed: {node_name}")
+                    
+                    # Get updated state
+                    config = {"configurable": {"thread_id": thread_id}}
+                    updated_state = workflow.compiled_graph.get_state(config).values
+                    st.session_state.state = updated_state
+                    st.rerun()
                         
                 except Exception as e:
-                    st.error(f"❌ Workflow Error: {str(e)}")
-                    
-                    # Show error details
-                    with st.expander("🐛 Error Details"):
-                        st.code(str(e))
-                        
-                        if state.get("error_log"):
-                            st.write("**Error Log:**")
-                            for error in state["error_log"]:
-                                st.write(f"- {error}")
+                    st.error(f"❌ Error: {str(e)}")
+                    import traceback
+                    with st.expander("🐛 Full Error"):
+                        st.code(traceback.format_exc())
         
         # Log viewer (always show)
-        if st.session_state.workflow_started:
-            with st.expander("📋 View Live Logs"):
-                from datetime import datetime
-                from pathlib import Path
-                
-                log_file = Path("logs") / f"app_{datetime.now().strftime('%Y%m%d')}.log"
-                
-                if log_file.exists():
-                    try:
-                        with open(log_file, "r") as f:
-                            logs = f.readlines()
-                            # Show last 50 lines
-                            st.code("".join(logs[-50:]))
-                    except:
-                        st.warning("Could not read log file")
-                else:
-                    st.warning(f"Log file not found: {log_file}")
+        with st.expander("📋 View Live Logs"):
+            from datetime import datetime
+            
+            log_file = Path("logs") / f"app_{datetime.now().strftime('%Y%m%d')}.log"
+            
+            if log_file.exists():
+                try:
+                    with open(log_file, "r") as f:
+                        logs = f.readlines()
+                        # Show last 50 lines
+                        st.code("".join(logs[-50:]))
+                except:
+                    st.warning("Could not read log file")
+            else:
+                st.warning(f"Log file not found: {log_file}")
+
 
 
 if __name__ == "__main__":

@@ -33,14 +33,17 @@ def render_progress_tracker(state: WorkflowState, next_node: str = None):
         # Find position based on next_node
         try:
             current_idx = next(i for i, (step_key, _) in enumerate(steps) if step_key == next_node)
-            # We're paused before this node, so subtract 1 for completed
-            current_idx = max(0, current_idx - 1)
         except StopIteration:
             # Workflow complete
             current_idx = len(steps)
     else:
-        # Just started
-        current_idx = 0
+        # Workflow just started or completed
+        # Check if any work has been done
+        if state.get("analysis_json"):
+            current_idx = len(steps)  # Complete
+        else:
+            current_idx = 0  # Not started yet
+   
     
     # Calculate progress
     progress = min(1.0, (current_idx + 1) / len(steps))

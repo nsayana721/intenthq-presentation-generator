@@ -7,7 +7,7 @@ Requirements:
 - NO criticism
 - NO vendor mention
 - NO mention of BRAND as this is purely for Industry Context
-- MAX 3 bullets with each rounding to 150 characters maximum
+- MAX 3 bullets with each rounding to 350 characters maximum
 - Keep neutral/professional with UK English conversion of words
 
 Output JSON only:

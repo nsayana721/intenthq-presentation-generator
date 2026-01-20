@@ -193,7 +193,8 @@ def create_initial_state(prospect_name: str, user_preferences: Dict[str, Any] = 
         execution_id=str(uuid.uuid4()),
         
         # Phase 1: IntentHQ data
-        intenthq_content=None,
+        intenthq_content_raw=None,
+        intenthq_content_cleaned=None,
         intenthq_cache_hit=False,
         
         # Phase 2: Prospect intelligence

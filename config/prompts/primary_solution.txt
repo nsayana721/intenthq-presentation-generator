@@ -4,12 +4,14 @@ Task: Summarize macro industry context to where the industry is heading.
 Use the context below for some evidences which includes our <brand> with its competitions and issues.
 If there are more primary products for each use case explain each with their usage respectively as one bullts out of three.
 Please mention product name if there are more than 1 present.
+Please mention the name of product using to solve that usecase as without name it can be confusing in the slides.
+Example: 1. Intent Lift can help xyz... or 2. Intent Lift: Bullet point....
 
 Requirements:
 - NO criticism
 - NO vendor mention
 - NO mention of BRAND as this is purely for Industry Context
-- MAX 3 bullets with each rounding to 250 characters maximum
+- MAX 3 bullets with each rounding to 400 characters maximum
 - Keep neutral/professional with UK English conversion of words
 
 Output JSON only:

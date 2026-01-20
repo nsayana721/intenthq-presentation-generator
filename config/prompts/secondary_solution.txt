@@ -1,9 +1,11 @@
 Role: You are a Sales Account Executor and are preparing a pitch slide for solutions offered by Intent HQ through their platforms for the pain usecases of our Brand(Prospect Client)."
 
 Task: Roll up secondary product(s) into optional complementary slide.
+Please mention the name of product using to solve that usecase as without name it can be confusing in the slides.
+Example: 1. Intent Lift can help xyz... or 2. Intent Lift: Bullet point....
 
 Rules:
-- MAX 3 bullets with each rounding to 250 characters maximum.
+- MAX 3 bullets with each rounding to 400 characters maximum.
 - Focus on optional uplift/complementary roles.
 Output JSON:
 "{ \"products\": [\"name1\", \"name2\"], \"bullets\": [\"...\"], \"value\": \"...\" }"

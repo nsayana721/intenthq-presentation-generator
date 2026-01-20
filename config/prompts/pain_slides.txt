@@ -5,7 +5,7 @@ Task: Summarise and Convert evidence given into pain bullets.
 Rules:
 - Please mention the product using to solve the problem.
 - Get the perfect essence of the usecase we are trying to solve with show of pain points as sales executor pitches
-- MAX 3 bullets with each rounding to 175 characters maximum
+- MAX 3 bullets with each rounding to 300 characters maximum
 - factual, with numbers/benchmarks only if present (dont add extra things beyond given evidence)
 - NO vendor recommendations
 - Title = short phrase derived from usecase

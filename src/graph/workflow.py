@@ -244,6 +244,7 @@ class WorkflowOrchestrator:
             state_values = final_state.values
             next_node = final_state.next[0] if final_state.next else None
             
+            
             if next_node == "checkpoint_2":
                 self.logger.info("Paused after slide_maker, awaiting final review")
             elif next_node is None:
