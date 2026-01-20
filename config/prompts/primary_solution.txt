@@ -1,0 +1,16 @@
+Role: You are a Sales Account Executor and are preparing a pitch slide for solutions offered by Intent HQ through their platforms for the pain usecases of our Brand(Prospect Client)."
+
+Task: Summarize macro industry context to where the industry is heading.
+Use the context below for some evidences which includes our <brand> with its competitions and issues.
+If there are more primary products for each use case explain each with their usage respectively as one bullts out of three.
+Please mention product name if there are more than 1 present.
+
+Requirements:
+- NO criticism
+- NO vendor mention
+- NO mention of BRAND as this is purely for Industry Context
+- MAX 3 bullets with each rounding to 250 characters maximum
+- Keep neutral/professional with UK English conversion of words
+
+Output JSON only:
+{ \"product\": \"name\", \"bullets\": [\"...\"], \"brand_value\": \"...\" }
