@@ -7,6 +7,7 @@ Autonomous AI system that generates tailored sales presentations using 8 intelli
 ![Architecture](docs/architecture_diagram.png)
 
 ### Architecture Flow
+```
 [USER INPUT] Brand Name
 
 [PHASE 1: INTENTHQ - File Cache, 14 days]
@@ -16,7 +17,6 @@ Autonomous AI system that generates tailored sales presentations using 8 intelli
 │   ├─ Agent 1: Scraper (Firecrawl)
 │   ├─ Agent 2: Cleaner
 │   └─ Save to cache with timestamp
-
 [PHASE 2: PROSPECT INTEL - File Cache, 3 days per client]
 ├─ Check if client cache exists & valid (< 3 days)
 ├─ If valid → Load from cache
@@ -24,24 +24,18 @@ Autonomous AI system that generates tailored sales presentations using 8 intelli
 │   ├─ Agent 3: Query Generator (Tavily 400 char optimization)
 │   ├─ Agent 4: Prospect Research (Tavily search)
 │   └─ Save to cache/clients/{brand_name}/
-
 [PHASE 3: ANALYSIS]
 ├─ Agent 5: Analysis Agent (scores pain points & use cases)
 └─ Output: Top 3 recommendations + full scored table
-
 [HUMAN CHECKPOINT 1] ⚠️ REQUIRED
 ├─ User reviews recommendations
 └─ Selects 3 use cases
-
 [PHASE 4: SOLUTION MAPPING]
 └─ Agent 6: Product Mapper (maps products to selected use cases)
-
 [PHASE 5: CONTENT GENERATION]
 └─ Agent 7: Content Creator (generates content with your prompts)
-
 [PHASE 6: SLIDE ASSEMBLY]
 └─ Agent 8: Slide Maker (cleans content, uses your template PPTX)
-
 [HUMAN CHECKPOINT 2] ⚠️ REQUIRED
 ├─ User reviews final slides
 └─ Chooses:
@@ -51,7 +45,7 @@ Autonomous AI system that generates tailored sales presentations using 8 intelli
     └─ 3️⃣ Modify content → Back to Agent 7
 
 [OUTPUT] Download PPTX
-
+```
 ### System Components
 
 - **8 Autonomous Agents**: Each with reasoning and decision-making
@@ -126,7 +120,11 @@ uv run streamlit run ui/streamlit_app.py
 | Slide Maker | Assemble PPTX | Template-based |
 
 ## Project Structure
+<<<<<<< HEAD
 
+=======
+```
+>>>>>>> bc75383616069e7f5760db6240fcb6a1c78e2c31
 intenthq-presentation-generator/
 ├── config/          # Configuration and prompts
 ├── src/             # Source code
@@ -138,6 +136,7 @@ intenthq-presentation-generator/
 ├── ui/              # Streamlit interface
 ├── data/            # Templates and cache
 └── tests/           # Test suite
+```
 
 ## Testing
 ```bash
