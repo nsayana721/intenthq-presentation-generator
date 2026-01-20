@@ -1,31 +1,99 @@
-"""
-PPTX Handler for Final_Template_V2_0.pptx
-Works with pre-made slides - updates text in existing shapes.
-"""
+"""PPTX template handling utilities."""
 
 from pptx import Presentation
-from pptx.util import Pt
 from pathlib import Path
 from config import settings
 import logging
 
 
 class PPTXHandler:
-    """
-    Handles PPTX operations for Final_Template_V2_0 template.
-    Template has 12 pre-made slides - we update text in existing shapes.
-    """
+    """Handles PPTX template operations with format preservation."""
     
     def __init__(self):
         self.logger = logging.getLogger("tools.pptx")
         self.template_path = settings.template_path
     
-    def create_presentation(self, slides_content: list, output_path: Path) -> Path:
+    def find_shape_by_name(self, slide, name):
+        """Find a shape on a slide by its name."""
+        for shape in slide.shapes:
+            if hasattr(shape, 'name') and shape.name == name:
+                return shape
+        return None
+    
+    def replace_text_preserve_format(self, shape, new_text):
+        """Replace text in a shape while preserving ALL formatting."""
+        if not hasattr(shape, 'text_frame'):
+            return
+        
+        text_frame = shape.text_frame
+        
+        # Save original formatting
+        para_format = {}
+        run_format = None
+        
+        if text_frame.paragraphs:
+            first_para = text_frame.paragraphs[0]
+            para_format = {
+                'alignment': first_para.alignment,
+                'level': first_para.level,
+                'space_before': first_para.space_before,
+                'space_after': first_para.space_after,
+                'line_spacing': first_para.line_spacing,
+            }
+            
+            if first_para.runs:
+                first_run = first_para.runs[0]
+                run_format = {
+                    'font_name': first_run.font.name,
+                    'font_size': first_run.font.size,
+                    'bold': first_run.font.bold,
+                    'italic': first_run.font.italic,
+                    'underline': first_run.font.underline,
+                    'color_rgb': first_run.font.color.rgb if first_run.font.color.type == 1 else None,
+                    'color_theme': first_run.font.color.theme_color if first_run.font.color.type == 2 else None,
+                }
+        
+        # Clear and add new text
+        text_frame.clear()
+        p = text_frame.paragraphs[0]
+        
+        # Restore paragraph formatting
+        if para_format:
+            p.alignment = para_format['alignment']
+            p.level = para_format['level']
+            if para_format['space_before'] is not None:
+                p.space_before = para_format['space_before']
+            if para_format['space_after'] is not None:
+                p.space_after = para_format['space_after']
+            if para_format['line_spacing'] is not None:
+                p.line_spacing = para_format['line_spacing']
+        
+        # Add text with formatting
+        run = p.add_run()
+        run.text = new_text
+        
+        if run_format:
+            if run_format['font_name']:
+                run.font.name = run_format['font_name']
+            if run_format['font_size']:
+                run.font.size = run_format['font_size']
+            if run_format['bold'] is not None:
+                run.font.bold = run_format['bold']
+            if run_format['italic'] is not None:
+                run.font.italic = run_format['italic']
+            if run_format['underline'] is not None:
+                run.font.underline = run_format['underline']
+            if run_format['color_rgb']:
+                run.font.color.rgb = run_format['color_rgb']
+            elif run_format['color_theme']:
+                run.font.color.theme_color = run_format['color_theme']
+    
+    def create_presentation(self, content_json, output_path: Path) -> Path:
         """
-        Create presentation from template by updating slide content.
+        Create presentation from template and content.
         
         Args:
-            slides_content: List of SlideContent objects from Agent 7
+            content_json: ContentCreatorOutput object
             output_path: Where to save the PPTX
             
         Returns:
@@ -33,187 +101,115 @@ class PPTXHandler:
         """
         self.logger.info(f"Creating presentation: {output_path.name}")
         
-        # Load template (has 12 pre-made slides)
-        if not self.template_path.exists():
-            raise FileNotFoundError(f"Template not found: {self.template_path}")
-        
+        # Load template
         prs = Presentation(str(self.template_path))
-        self.logger.info(f"Loaded template with {len(prs.slides)} slides")
+        self.logger.info(f"Loaded template from {self.template_path}")
         
-        # Update each slide with Agent 7's content
-        for slide_data in slides_content:
+        brand = content_json.brand
+        slides_data = content_json.slides
+        
+        # Process each slide
+        for slide_data in slides_data:
             slide_num = slide_data.slide
+            slide_index = slide_num - 1
             
-            # Validate slide number
-            if slide_num < 1 or slide_num > len(prs.slides):
-                self.logger.warning(f"Slide {slide_num} out of range, skipping")
+            if slide_index >= len(prs.slides):
+                self.logger.warning(f"Slide {slide_num} not found in template")
                 continue
             
-            # Get the template slide (0-indexed)
-            slide = prs.slides[slide_num - 1]
+            slide = prs.slides[slide_index]
+            self.logger.info(f"Processing Slide {slide_num}: {slide_data.title}")
             
-            # Update slide content
-            self._update_slide(slide, slide_data, slide_num)
+            # SLIDE 1: Brand name
+            if slide_num == 1:
+                shape = self.find_shape_by_name(slide, 'BRAND_NAME')
+                if shape:
+                    self.replace_text_preserve_format(shape, brand)
+                    self.logger.info(f"  ✓ Replaced BRAND_NAME with '{brand}'")
+            
+            # SLIDE 2: Static
+            elif slide_num == 2:
+                self.logger.info("  ⊘ Skipping (static agenda)")
+            
+            # SLIDE 3: Industry Context
+            elif slide_num == 3:
+                if slide_data.content and slide_data.content != "STATIC_TEMPLATE":
+                    shape = self.find_shape_by_name(slide, 'CONTENT_BOX')
+                    if shape:
+                        self.replace_text_preserve_format(shape, slide_data.content)
+                        self.logger.info("  ✓ Replaced CONTENT_BOX")
+                
+                # Bullets (up to 3)
+                for i in range(min(3, len(slide_data.bullets or []))):
+                    shape = self.find_shape_by_name(slide, f'BULLET_{i+1}')
+                    if shape:
+                        self.replace_text_preserve_format(shape, slide_data.bullets[i])
+                        self.logger.info(f"  ✓ Replaced BULLET_{i+1}")
+            
+            # SLIDES 4-6: Use Cases
+            elif slide_num in [4, 5, 6]:
+                usecase_num = slide_num - 3
+                
+                # Title
+                shape = self.find_shape_by_name(slide, f'USECASE_{usecase_num}_TITLE')
+                if shape:
+                    self.replace_text_preserve_format(shape, slide_data.title)
+                    self.logger.info(f"  ✓ Replaced USECASE_{usecase_num}_TITLE")
+                
+                # Bullets (up to 3)
+                for i in range(min(3, len(slide_data.bullets or []))):
+                    shape = self.find_shape_by_name(slide, f'BULLET_{i+1}')
+                    if shape:
+                        self.replace_text_preserve_format(shape, slide_data.bullets[i])
+                        self.logger.info(f"  ✓ Replaced BULLET_{i+1}")
+            
+            # SLIDES 7-9: Static
+            elif slide_num in [7, 8, 9]:
+                self.logger.info("  ⊘ Skipping (static slide)")
+            
+            # SLIDE 10: Primary Solution
+            elif slide_num == 10:
+                # Find JSON slide 10 data
+                json_slide_10 = next((s for s in slides_data if s.slide == 10), None)
+                if json_slide_10:
+                    # Title
+                    shape = self.find_shape_by_name(slide, 'PRIMARY_SOLUTION_TITLE')
+                    if shape:
+                        self.replace_text_preserve_format(shape, json_slide_10.title or "Primary Solution")
+                        self.logger.info("  ✓ Replaced PRIMARY_SOLUTION_TITLE")
+                    
+                    # Bullets (up to 3)
+                    for i in range(min(3, len(json_slide_10.bullets or []))):
+                        shape = self.find_shape_by_name(slide, f'BULLET_{i+1}')
+                        if shape:
+                            self.replace_text_preserve_format(shape, json_slide_10.bullets[i])
+                            self.logger.info(f"  ✓ Replaced BULLET_{i+1}")
+            
+            # SLIDE 11: Secondary Solutions
+            elif slide_num == 11:
+                # Find JSON slide 11 data
+                json_slide_11 = next((s for s in slides_data if s.slide == 11), None)
+                if json_slide_11:
+                    # Title
+                    shape = self.find_shape_by_name(slide, 'SECONDARY_SOLUTION_TITLE')
+                    if shape:
+                        self.replace_text_preserve_format(shape, json_slide_11.title or "Complementary Solutions")
+                        self.logger.info("  ✓ Replaced SECONDARY_SOLUTION_TITLE")
+                    
+                    # Bullets (up to 3)
+                    for i in range(min(3, len(json_slide_11.bullets or []))):
+                        shape = self.find_shape_by_name(slide, f'BULLET_{i+1}')
+                        if shape:
+                            self.replace_text_preserve_format(shape, json_slide_11.bullets[i])
+                            self.logger.info(f"  ✓ Replaced BULLET_{i+1}")
+            
+            # SLIDE 12: Static
+            elif slide_num == 12:
+                self.logger.info("  ⊘ Skipping (static slide)")
         
         # Save
         output_path.parent.mkdir(parents=True, exist_ok=True)
         prs.save(str(output_path))
         
-        self.logger.info(f"Presentation saved: {output_path}")
+        self.logger.info(f"✅ Presentation saved: {output_path}")
         return output_path
-    
-    def _update_slide(self, slide, slide_data, slide_num: int):
-        """
-        Update a single slide with new content.
-        
-        Strategy:
-        - Slides 7, 8, 9, 12: STATIC - skip (keep template as-is)
-        - Other slides: Update text in shapes
-        """
-        # STATIC slides - don't modify
-        if slide_num in [7, 8, 9, 12]:
-            self.logger.info(f"Slide {slide_num}: STATIC - keeping template content")
-            return
-        
-        # Check if this is a STATIC marker from Agent 7
-        if slide_data.content == "STATIC_TEMPLATE":
-            self.logger.info(f"Slide {slide_num}: STATIC marker - keeping template")
-            return
-        
-        self.logger.info(f"Slide {slide_num}: Updating content - {slide_data.title}")
-        
-        # Update title (find first shape with title text)
-        self._update_title(slide, slide_data.title)
-        
-        # Update content based on slide type
-        if slide_num == 1:
-            # Title slide - update subtitle
-            self._update_title_slide(slide, slide_data)
-        
-        elif slide_num == 2:
-            # Agenda - update bullets
-            self._update_bulleted_slide(slide, slide_data)
-        
-        elif slide_num == 3:
-            # Industry context - content + bullets
-            self._update_content_slide(slide, slide_data)
-        
-        elif slide_num in [4, 5, 6]:
-            # Pain slides - bullets
-            self._update_bulleted_slide(slide, slide_data)
-        
-        elif slide_num in [10, 11]:
-            # Solution slides - bullets
-            self._update_bulleted_slide(slide, slide_data)
-    
-    def _update_title(self, slide, title: str):
-        """Update slide title (first text shape or shapes.title)."""
-        if not title:
-            return
-        
-        # Try standard title shape first
-        if slide.shapes.title:
-            slide.shapes.title.text = title
-            self.logger.debug(f"  Updated title: {title[:50]}...")
-            return
-        
-        # Otherwise find first large text box (likely title)
-        for shape in slide.shapes:
-            if shape.has_text_frame:
-                shape.text_frame.text = title
-                self.logger.debug(f"  Updated title in text box: {title[:50]}...")
-                return
-    
-    def _update_title_slide(self, slide, slide_data):
-        """Update title slide (slide 1) with brand name."""
-        # Title already updated in _update_title
-        # Update subtitle if present
-        for shape in slide.shapes:
-            if shape.has_text_frame and shape != slide.shapes.title:
-                # This is likely the subtitle
-                if slide_data.content:
-                    shape.text_frame.text = slide_data.content
-                break
-    
-    def _update_bulleted_slide(self, slide, slide_data):
-        """Update a slide with bullet points."""
-        if not slide_data.bullets:
-            return
-        
-        # Find the main content text box (usually largest text frame after title)
-        content_shapes = [
-            s for s in slide.shapes 
-            if s.has_text_frame and s != slide.shapes.title
-        ]
-        
-        if not content_shapes:
-            self.logger.warning("  No content shapes found for bullets")
-            return
-        
-        # Use the first/largest content shape
-        content_shape = content_shapes[0]
-        tf = content_shape.text_frame
-        tf.clear()
-        
-        # Add bullets
-        for i, bullet in enumerate(slide_data.bullets):
-            if i == 0:
-                p = tf.paragraphs[0]
-            else:
-                p = tf.add_paragraph()
-            
-            p.text = self._clean_text(bullet)
-            p.level = 0
-            
-            # Try to preserve font size
-            if p.runs:
-                p.runs[0].font.size = Pt(18)
-        
-        self.logger.debug(f"  Added {len(slide_data.bullets)} bullets")
-    
-    def _update_content_slide(self, slide, slide_data):
-        """Update a slide with content paragraph + bullets."""
-        # Find content shapes (exclude title)
-        content_shapes = [
-            s for s in slide.shapes 
-            if s.has_text_frame and s != slide.shapes.title
-        ]
-        
-        if not content_shapes:
-            return
-        
-        content_shape = content_shapes[0]
-        tf = content_shape.text_frame
-        tf.clear()
-        
-        # Add content paragraph
-        if slide_data.content:
-            p = tf.paragraphs[0]
-            p.text = self._clean_text(slide_data.content)
-            p.level = 0
-            if p.runs:
-                p.runs[0].font.size = Pt(16)
-        
-        # Add bullets
-        if slide_data.bullets:
-            for bullet in slide_data.bullets:
-                p = tf.add_paragraph()
-                p.text = self._clean_text(bullet)
-                p.level = 0
-                if p.runs:
-                    p.runs[0].font.size = Pt(18)
-        
-        self.logger.debug(f"  Added content + {len(slide_data.bullets or [])} bullets")
-    
-    def _clean_text(self, text: str) -> str:
-        """Clean text for presentation."""
-        if not text:
-            return ""
-        
-        # Remove meta words
-        remove_words = ["optional", "(optional)", "TBD", "if applicable"]
-        for word in remove_words:
-            text = text.replace(word, "")
-            text = text.replace(word.capitalize(), "")
-        
-        return text.strip()
