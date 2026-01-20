@@ -186,31 +186,3 @@ Replace `data/templates/intenthq_template.pptx` with your branded template.
 
 ### Adjust Workflow
 Modify `src/graph/workflow.py` to change agent flow.
-
-## 📝 Development
-
-### Code Style
-```bash
-# Format code
-black src/ ui/ tests/
-
-# Type checking
-mypy src/
-```
-
-### Adding New Agent
-1. Create agent file in `src/agents/`
-2. Inherit from `BaseAgent`
-3. Add to workflow in `src/graph/workflow.py`
-4. Update routing logic if needed
-
-## 🐛 Troubleshooting
-
-### Issue: Cache not working
-**Solution**: Check timestamps in `.timestamp` files
-
-### Issue: Tavily rate limit
-**Solution**: Adjust `TAVILY_MAX_RESULTS` in `.env`
-
-### Issue: PPTX template not found
-**Solution**: Ensure `intenthq_template.pptx` exists in `data/templates/`
